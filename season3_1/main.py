@@ -40,11 +40,12 @@ async def get_course(id: int = Path(default=None, title="Course ID"), gt=0, lt=3
 
 
 @app.post("/courses", status_code=status.HTTP_201_CREATED, description="Create a course object", summary="Create a course object")
-async def post_course(course: Course, db: Any = Depends(fake_db)):
+async def post_course(course: Course):
     if course.id not in courses:
         next_id: int = len(courses) + 1
-        courses[next_id] = course
-        del course.id
+        course.id = next_id
+        courses.append(course)
+
         return course
     else:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
