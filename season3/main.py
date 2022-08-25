@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, status, Path, Query
 from fastapi.responses import JSONResponse
-from models import Course
+from models import Course, courses
 
 from time import sleep
 
@@ -11,19 +11,6 @@ app = FastAPI(
     version="0.0.1",
     description="API to study FASTApi"
 )
-
-courses = {
-    1: {
-        "titulo": "Programação para Leigos",
-        "aulas": 112,
-        "horas": 58
-    },
-    2: {
-        "titulo": "Algoritmos e Lógica de Programação",
-        "aulas": 87,
-        "horas": 67
-    }
-}
 
 
 def fake_db():
@@ -40,13 +27,11 @@ def fake_db():
 async def get_courses(db: Any = Depends(fake_db)):
     return courses
 
-@app.get('/courses/{id}')
-async def get_course(id: int = Path(default=None, title="Course ID"), gt=0, lt=3, db: Any = Depends(fake_db)):
-    """Get course by ID"""
 
+@app.get('/courses/{id}', description="Return course by ID", summary="Return course by ID", response_model=Course)
+async def get_course(id: int = Path(default=None, title="Course ID"), gt=0, lt=3, db: Any = Depends(fake_db)):
     try:
         data = courses[id]
-        data["id"] = id
         return data
 
     except KeyError:
@@ -54,9 +39,8 @@ async def get_course(id: int = Path(default=None, title="Course ID"), gt=0, lt=3
                             detail="Course '{}' not found".format(id))
 
 
-@app.post("/courses", status_code=status.HTTP_201_CREATED)
+@app.post("/courses", status_code=status.HTTP_201_CREATED, description="Create a course object", summary="Create a course object")
 async def post_course(course: Course, db: Any = Depends(fake_db)):
-    """Create a course object"""
     if course.id not in courses:
         next_id: int = len(courses) + 1
         courses[next_id] = course
@@ -67,9 +51,8 @@ async def post_course(course: Course, db: Any = Depends(fake_db)):
                             detail="Course '{}' already exists".format(course.id))
 
 
-@app.put("/courses/{id}")
+@app.put("/courses/{id}",  description="Update course by ID", summary="Update course by ID")
 async def put_course(id: int, course: Course, db: Any = Depends(fake_db)):
-    """Update a course object by ID"""
     if id in courses:
         courses[id] = course
         return course
@@ -78,7 +61,7 @@ async def put_course(id: int, course: Course, db: Any = Depends(fake_db)):
                             detail="Course '{}' not found".format(id))
 
 
-@app.delete("/courses/{id}")
+@app.delete("/courses/{id}",  description="Delete course by ID", summary="Delete course by ID")
 async def delete_course(id: int, db: Any = Depends(fake_db)):
     if id in courses:
         del courses[id]
@@ -89,7 +72,7 @@ async def delete_course(id: int, db: Any = Depends(fake_db)):
                             detail="Course '{}' not found".format(id))
 
 
-@app.get("/calculator")
+@app.get("/calculator",  description="Calculator example", summary="Calculator example")
 async def calcular(
     a: int = Query(default=None, gt=5),
     b: int = Query(default=None, gt=10),
