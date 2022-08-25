@@ -1,11 +1,16 @@
-from os import stat
-from fastapi import FastAPI, HTTPException, status, Response
+from typing import Any, List, Optional
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, status, Path, Query
 from fastapi.responses import JSONResponse
-
 from models import Course
-from typing import List, Optional
 
-app = FastAPI()
+from time import sleep
+
+app = FastAPI(
+    title="Courses API - Geek University",
+    version="0.0.1",
+    description="API to study FASTApi"
+)
 
 courses = {
     1: {
@@ -21,14 +26,22 @@ courses = {
 }
 
 
-@app.get('/courses')
-async def get_courses():
-    """Courses List"""
+def fake_db():
+    """ Fake function required to execute other functions """
+    try:
+        print("Connecting database...")
+        sleep(1)
+    finally:
+        print("Closing database connection...")
+        sleep(1)
+
+
+@app.get('/courses', description="Return courses list", summary="Return courses list", response_model=List[Course])
+async def get_courses(db: Any = Depends(fake_db)):
     return courses
 
-
 @app.get('/courses/{id}')
-async def get_course(id: int):
+async def get_course(id: int = Path(default=None, title="Course ID"), gt=0, lt=3, db: Any = Depends(fake_db)):
     """Get course by ID"""
 
     try:
@@ -42,7 +55,8 @@ async def get_course(id: int):
 
 
 @app.post("/courses", status_code=status.HTTP_201_CREATED)
-async def post_course(course: Course):
+async def post_course(course: Course, db: Any = Depends(fake_db)):
+    """Create a course object"""
     if course.id not in courses:
         next_id: int = len(courses) + 1
         courses[next_id] = course
@@ -54,7 +68,8 @@ async def post_course(course: Course):
 
 
 @app.put("/courses/{id}")
-async def put_course(id: int, course: Course):
+async def put_course(id: int, course: Course, db: Any = Depends(fake_db)):
+    """Update a course object by ID"""
     if id in courses:
         courses[id] = course
         return course
@@ -62,15 +77,37 @@ async def put_course(id: int, course: Course):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Course '{}' not found".format(id))
 
+
 @app.delete("/courses/{id}")
-async def delete_course(id: int):
+async def delete_course(id: int, db: Any = Depends(fake_db)):
     if id in courses:
         del courses[id]
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    
+
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Course '{}' not found".format(id))
+
+
+@app.get("/calculator")
+async def calcular(
+    a: int = Query(default=None, gt=5),
+    b: int = Query(default=None, gt=10),
+    x_geek: str = Header(default=None),
+    c: Optional[int] = None
+):
+    """
+    Calculator with 3 parameters
+    - a: int greather than 5
+    - b: int greather than 10
+    - c: int Optional
+    """
+    soma: int = a + b
+    if c:
+        soma = soma + c
+    print("Header 'X Geek': {}".format(x_geek))
+
+    return {"resultado": soma}
 
 if __name__ == '__main__':
     import uvicorn
